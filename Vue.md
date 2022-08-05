@@ -178,3 +178,14 @@ const app2 = createApp({
 app2.mount('#container-2')
 ```
 
+## Template Syntax:
+
+Vue uses a HTML-based Syntax that allows one to declaratively bind the rendered DOM to the underlying components instance data. All vue templates are syntactically valid HTML that can be parsed by HTML compliant parsers
+Under the hood, vue compiles the template code into highly-optimized js code and combined with the reactivity system, vue is able to intelligently figure out the minimum components to rerender and apply the minimal amount of DOM manipulations when the app state changes.
+
+### Text Inerpolation:
+
+This uses the Moustache syntax(double curly braces):
+`<span>Message: {{ msg }}</span>`
+
+The Moustache tag will be replaced with the value of the `msg` property from the corresponding component instance. Will also be updated when it changes. 
