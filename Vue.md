@@ -99,4 +99,82 @@ Vue's build system is based on **vite** which is a common frontend build tool
 Before beginning, ensure you have node.js installed.
 
 To install vue, type in the following command:<br>
-`npm init vue@latest`
+`npm init vue@latest`<br>
+This command will execute **create-vue** which is the official vue project scaffolding tool. 
+
+In you project folder,execute the following to install dependencies and to start the dev server:<br>
+`npm install` <br>
+`npm run dev`
+
+### The application instance:
+
+Every vue application begins by creating an application instance with the `createApp` function.
+
+```
+import { createApp } from 'vue'
+
+const app = createApp({
+  /* root component options */
+})
+
+```
+
+### The Root App component:
+
+This is the object that is passed as an argument to the createApp function which is a component containing other components as its children.
+
+In SFC, we typically import this component from another file:
+
+```
+import { createApp } from 'vue'
+// import the root component App from a single-file component.
+import App from './App.vue'
+
+const app = createApp(App)
+
+```
+
+### Mounting the App:
+
+An application instance will not render anything unless its `mount()` method is called. It expects a container argument which can be an actual DOM element or a selector string.
+
+`<div id="app"></div>`<br>
+`app.mount('#app')`<br>
+The content of the app's root component will be rendered insinde the container element. The container element is not considered part of the app.
+The mount method should only be called after all configurations and and asset registrations are done. Its return value is the root component instance and not the application instance.
+
+
+### App Configurations:
+
+The application instance provides a .config() object that allows one to configure a few app-level options like defining an error handler that captures errors from all descendent components.
+```
+app.config.errorHandler = (err) => {
+  /* handle error */
+}
+
+```
+One can also register app-scoped assets like:
+```
+app.component('TodoDeleteButton', TodoDeleteButton)
+
+```
+This allows **TodoDeleteButton** to be used anywhere in our application.
+
+Remember that all configurations need to be applied before mounting the app!!
+
+
+### Multiple application instances:
+
+The **createApp** API allows multiple vue applications to co-exist in the same page.
+```
+const app1 = createApp({
+  /* ... */
+})
+app1.mount('#container-1')
+
+const app2 = createApp({
+  /* ... */
+})
+app2.mount('#container-2')
+```
+
