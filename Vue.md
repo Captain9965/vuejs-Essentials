@@ -424,7 +424,7 @@ Like the properties of the component instance, the methods are accessible within
 ```
 <button @click="increment">{{ count }}</button>
 ```
-## DOM Update Timing:
+### DOM Update Timing:
 
 When one mutates a reactive state, the DOM mutates automatically, by buffering them until the next 'tick' in the upddate cycle to ensure each component updates only once no matter how many state changes one makes.
 One can use the `nextTick()` global API to wait for the DOM update to complete after a state change.
@@ -1456,4 +1456,232 @@ In the above, a parent referencing this component will only have access to `publ
 
 ## Components:
 
+Components allow us to split the UI into independent, reusable pieces and think about each piece in isolation.
 
+### Defining a Component:
+when using a build step, we define an SFC using the extension `.vue`.
+
+### Using a Component:
+
+To expose the imported components to our template, we register it with  the `components` option:
+```
+<script>
+import ButtonCounter from './ButtonCounter.vue'
+
+export default {
+  components: {
+    ButtonCounter
+  }
+}
+</script>
+
+<template>
+  <h1>Here is a child component!</h1>
+  <ButtonCounter />
+</template>
+```
+The component will now be available as a tag using the key it is registered under.
+In SFC's it is recommended to use pascalCase to differentiate it with HTML native tags. However, one can use kebab-case when authoring the templates directly in a DOM. 
+
+### Passing Props:
+
+Props are custom attributes one can register on a component. To use props, one must declare them in list of props the component accepts using the `props` option:
+```
+<!-- BlogPost.vue -->
+<script>
+export default {
+  props: ['title']
+}
+</script>
+
+<template>
+  <h4>{{ title }}</h4>
+</template>
+```
+When a prop is passed to a component, it becomes a property on that componet's instance.
+Once registered, one can pass values to a prop using custom attributes like:
+```
+<BlogPost title="My journey with Vue" />
+<BlogPost title="Blogging with Vue" />
+<BlogPost title="Why Vue is so fun" />
+```
+
+One can also pass dynamic prop values using `v-bind`:
+```
+<BlogPost
+  v-for="post in posts"
+  :key="post.id"
+  :title="post.title"
+ />
+ ```
+ ### Listening to events:
+
+ Some features may require communicating back up to the parent. For example, one may want a button to notify the parent to enlarge text. To do this, components provide a custom events system. the parent can choose to listen to any event with `v-on` or `@`:
+
+ ```
+ <BlogPost
+  ...
+  @enlarge-text="postFontSize += 0.1"
+ />
+ ```
+ Then the child component can emit an event on itself by calling the built in `$emit` method passing the name of the event:
+ ```
+ <!-- BlogPost.vue, omitting <script> -->
+<template>
+  <div class="blog-post">
+    <h4>{{ title }}</h4>
+    <button @click="$emit('enlarge-text')">Enlarge text</button>
+  </div>
+</template>
+```
+One can also declare emitted events using the `emits` option:
+```
+<!-- BlogPost.vue -->
+<script>
+export default {
+  props: ['title'],
+  emits: ['enlarge-text']
+}
+</script>
+```
+
+### Component distribution with slots:
+ This can be achieved by the `<slot>` element.
+ ```
+ <template>
+  <div class="alert-box">
+    <strong>This is an Error for Demo Purposes</strong>
+    <slot />
+  </div>
+</template>
+
+<style scoped>
+.alert-box {
+  /* ... */
+}
+```
+We use `<slot>` as a placeholder where we want the content to go.
+
+### Dynamic components:
+
+This is made possible with vue's `<component>` element  with the special `is` attribute.
+```
+<!-- Component changes when currentTab changes -->
+<component :is="currentTab"></component>
+```
+In this case, the component changes when `currentTab` changes. `is` could be the string name of a registered component or the actual imported component object.  
+It could also be a regular HTML element. 
+
+When switching between multiple components with `is`, the components will be unmounted, but can be kept "alive" with the built-in `<keepAlive>` component.
+
+### State Management:
+
+The simplicity of the component instance state management quickly breaks down when multiple components begin to share state.
+
+A possible workaround could be lifting up the state and passing it down as props. However, this get tedious as a result of `prop drilling`.
+Another workaround could be reaching for direct parent/child instances via template refs or trying to synchronize copies of the same state via emitted events. this is however a recipe for unmaintainable code.
+
+A simpler solution would be extracting the shared state out of the components and manage it in a global singleton. With this, our component tree becomes a big view and any component can access the state or trigger actions no matter where they are in the tree.
+
+### Simple state Management with the Reactivity API:
+
+Internally, the object returned by the `data()` is made reactive by the `reactive()` function, which is available as a public API.
+
+If one has a piece of state that should be shared by multiple instances, one can use `reactive()` to create a reactive object and then import it from multiple instances.
+```
+// store.js
+import { reactive } from 'vue'
+
+export const store = reactive({
+  count: 0
+})
+```
+and:
+```
+<!-- ComponentA.vue -->
+<script>
+import { store } from './store.js'
+
+export default {
+  data() {
+    return {
+      store
+    }
+  }
+}
+</script>
+
+<template>From A: {{ store.count }}</template>
+```
+ and for component 2:
+ ```
+ <!-- ComponentB.vue -->
+<script>
+import { store } from './store.js'
+
+export default {
+  data() {
+    return {
+      store
+    }
+  }
+}
+</script>
+
+<template>From B: {{ store.count }}</template>
+```
+Now whenever the store object is mutated, both components will update their views because we have a single source of truth.
+However, this means that any component importing `store` can mutate it however they want. 
+```
+<template>
+  <button @click="store.count++">
+    From B: {{ store.count }}
+  </button>
+</template>
+```
+To ensure that the state mutating logic is centralized for maintainabillity, it is recommended to define methods on the store with names that express the intention of the actions:
+```
+// store.js
+import { reactive } from 'vue'
+
+export const store = reactive({
+  count: 0,
+  increment() {
+    this.count++
+  }
+})
+```
+and:
+```
+<template>
+  <button @click="store.increment()">
+    From B: {{ store.count }}
+  </button>
+</template>
+```
+Note that the method is called with the parenthesis. This is necessary in order to call the method with the proper `this` context, since it is not a component method.
+
+One can also share a reactive state created using other reactivity APIs such as `ref()` or `computed()` or even return a global state from a composable:
+
+```
+import { ref } from 'vue'
+
+// global state, created in module scope
+const globalCount = ref(1)
+
+export function useCount() {
+  // local state, created per-component
+  const localCount = ref(1)
+
+  return {
+    globalCount,
+    localCount
+  }
+}
+```
+while the above solutions would work well, on a large scale, Pinia is a state management library that offers:
+
+1. Stronger conventions for team collaboration
+2. Intergration with Vue DevTools, including timeline, in-component inspection, and time-travel debugging.
+3. Hot Module Repalcement
+4. Server-side Rendering support

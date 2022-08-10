@@ -1,45 +1,54 @@
 <script>
 import { computed } from '@vue/reactivity'
-
+import  InputComponent  from './components/InputComponent.vue'
+import blogPost from './components/blogPost.vue'
+import BlogPost from './components/blogPost.vue'
+import {store} from './store/store'
   export default{
-    data(){
-      return{
-        count : 0,
-        list : ["lenny", "James", "Cephas"],
-        msg: "Hello World",
-        input:"nothing",
-        rawHTML: '<span style="color: red">This should be red.</span>'
-      }
+    data() {
+        return {
+            store,
+            list: ["lenny", "James", "Cephas"],
+            msg: "Hello World",
+            rawHTML: "<span style=\"color: red\">This should be red.</span>",
+            posts: [
+              { id: 1, title: 'My journey with Vue' },
+              { id: 2, title: 'Blogging with Vue' },
+              { id: 3, title: 'Why Vue is so fun' }]
+        };
     },
-    methods:{
-      changeMsg(){
-        this.count++
-        this.msg = "Happy coding"
-      },
-      returnMsg(){
-        this.count++
-        this.msg = "Hello World"
-      },
-      greet(event){
-        //this inside methods indicate the current active instance:
-        alert(`Hello ${this.name}`)
-        if (event){
-          alert(event.target.tagName)
+    components:{
+      InputComponent,
+      blogPost
+    },
+    methods: {
+        changeMsg() {
+            store.increment();
+            this.msg = "Happy coding";
+        },
+        returnMsg() {
+            store.increment();
+            this.msg = "Hello World";
+        },
+        greet(event) {
+            //this inside methods indicate the current active instance:
+            alert(`Hello ${this.name}`);
+            if (event) {
+                alert(event.target.tagName);
+            }
         }
-
-      }
     },
-    mounted(){
-      console.log(this.$refs.items)
-      this.returnMsg()
+    mounted() {
+        console.log(this.$refs.items);
+        this.returnMsg();
     },
     computed: {
-      countExceeded(){
-        return this.count > 5 ? 'Count is greater than 5': 'Count is less than 5'
-      }
-
-    }
-  }
+        countExceeded() {
+            return store.count > 5 ? "Count is greater than 5" : "Count is less than 5";
+        }
+    },
+    components: { InputComponent, BlogPost }
+}
 </script>
 
 <template>
@@ -65,10 +74,12 @@ import { computed } from '@vue/reactivity'
      <br>
     <br>
     <button @click="greet"> Greet me! </button>
-    <p>
-      The message is {{ input }}
-    </p>
-    <textarea v-model="input" placeholder="Type your message here"/>
+   <InputComponent/>
+   <BlogPost 
+      v-for = "post in posts"
+      :key ="post.id"
+      :title = "post.title"
+      />
   </main>
 </template>
 
