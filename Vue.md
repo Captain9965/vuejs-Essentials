@@ -835,4 +835,625 @@ data() {
   }
 }
 ```
- 
+and:
+```
+<li v-for="item in items">
+  {{ item.message }}
+</li>
+```
+`v-for` also supports an optional second alias for the index of the current item.
+```
+data() {
+  return {
+    parentMessage: 'Parent',
+    items: [{ message: 'Foo' }, { message: 'Bar' }]
+  }
+}
+```
+and:
+```
+<li v-for="(item, index) in items">
+  {{ parentMessage }} - {{ index }} - {{ item.message }}
+</li>
+```
+The `v-for` scope has access to parent scopes.
+```
+<li v-for="item in items">
+  <span v-for="childItem in item.children">
+    {{ item.message }} {{ childItem }}
+  </span>
+</li>
+```
+Note that `of` can be used instead of `in`. Also, `v-for` works with objects
+```
+<li v-for="(value, key, index) in myObject">
+  {{ index }}. {{ key }}: {{ value }}
+</li>
+```
+### v-for with a range:
+```
+<span v-for="n in 10">{{ n }}</span>
+```
+Note that `n` in this case begins from 1, not 0
+
+### v-for on `<template>`:
+```
+<ul>
+  <template v-for
+  ="item in items">
+    <li>{{ item.msg }}</li>
+    <li class="divider" role="presentation"></li>
+  </template>
+</ul>
+```
+### v-for with v-if:
+If used on the same node, `v-if` has a higher priority. This is solved by:
+```
+<template v-for="todo in todos">
+  <li v-if="!todo.isComplete">
+    {{ todo.name }}
+  </li>
+</template>
+```
+ ### Maintaining state with key:
+ While vue is updating a list of elements with `v-for`, by default, it uses an 'in-place' patch strategy. If the order of items has changed, instead of moving the DOM elements to match the order of items, vue will patch each elements in place and make sure it reflects what should be rendered at that specific index. 
+ However, this is only suitable when the list render output does not rely on child component state or temporary DOM state.(eg, form input values)
+ for vue to track each node's identity, one needs to provide a unique key attibute for each item:
+ ```
+ <div v-for="item in items" :key="item.id">
+  <!-- content -->
+</div
+```
+In a template element, the key should be placed on the `<template>` container.
+The key binding expects primitive values, strings and numbers, not objects.
+
+### v-for with a component:
+```
+<MyComponent v-for="item in items" :key="item.id" />
+```
+One must remember to provide a `key` however. 
+This will however, not pass any data to the component, because component have isolated scopes of their own. to pass data, we use props:
+```
+<MyComponent
+  v-for="(item, index) in items"
+  :item="item"
+  :index="index"
+  :key="item.id"
+/>
+```
+
+### Array Change Detection:
+vue is able to detect when a reactive array's methods are called and trigger necessary updates. 
+
+### Replacing an array:
+There are also non-mutating methods such as `filter()`, `concat()` which return new arrays. 
+When working with these, we should always replace the old array with the new one:
+```
+this.items = this.items.filter((item) => item.message.match(/Foo/))
+```
+Vue provides smart heuristics to maximize DOM element use, hence the entire DOM is not thrown away.
+
+### Displaying sorted of filtered data:
+To do this, one may not want to replace the entire array, instead, one should create a computed property that returns the filtered or sorted array:
+```
+data() {
+  return {
+    numbers: [1, 2, 3, 4, 5]
+  }
+},
+computed: {
+  evenNumbers() {
+    return this.numbers.filter(n => n % 2 === 0)
+  }
+}
+```
+and:
+```
+<li v-for="n in evenNumbers">{{ n }}</li>
+```
+
+In the case where computed properties are not possible like in nested loops, one can use a method:
+```
+data() {
+  return {
+    sets: [[ 1, 2, 3, 4, 5 ], [6, 7, 8, 9, 10]]
+  }
+},
+methods: {
+  even(numbers) {
+    return numbers.filter(number => number % 2 === 0)
+  }
+}
+```
+and:
+```
+<ul v-for="numbers in sets">
+  <li v-for="n in even(numbers)">{{ n }}</li>
+</ul>
+```
+One should avoid mutative methods like `reversed()` in a computed property. one can create a copy before calling the methods.
+
+### Event Handling:
+
+We can use the `v-on` directive or the `@:attribute = ""` shorthand. The handler could be inline or a method handler.
+
+```
+data() {
+  return {
+    name: 'Vue.js'
+  }
+},
+methods: {
+  greet(event) {
+    // `this` inside methods points to the current active instance
+    alert(`Hello ${this.name}!`)
+    // `event` is the native DOM event
+    if (event) {
+      alert(event.target.tagName)
+    }
+  }
+}
+``` 
+and:
+```
+<button @click="greet">Greet</button>
+
+```
+### Calling methods in inline handlers:
+
+We can also call methods in an inline manner:
+```
+methods: {
+  say(message) {
+    alert(message)
+  }
+}
+```
+and:
+```
+<button @click="say('hello')">Say hello</button>
+<button @click="say('bye')">Say bye</button>
+```
+
+### Accessing event Argument in inline handlers:
+Sometimes, we need to access the original DOM event in an inline handler. It can be passed into a method using the special `$event` variable, or use an arrow function:
+```
+<!-- using $event special variable -->
+<button @click="warn('Form cannot be submitted yet.', $event)">
+  Submit
+</button>
+
+<!-- using inline arrow function -->
+<button @click="(event) => warn('Form cannot be submitted yet.', event)">
+  Submit
+</button>
+```
+and:
+```
+methods: {
+  warn(message, event) {
+    // now we have access to the native event
+    if (event) {
+      event.preventDefault()
+    }
+    alert(message)
+  }
+}
+```
+### Event Modifiers:
+Include:
+
+1. .stop
+2. .prevent
+3. .self 
+4. .capture 
+5. .once 
+6. .passive 
+```
+<!-- the click event's propagation will be stopped -->
+<a @click.stop="doThis"></a>
+
+<!-- the submit event will no longer reload the page -->
+<form @submit.prevent="onSubmit"></form>
+
+<!-- modifiers can be chained -->
+<a @click.stop.prevent="doThat"></a>
+
+<!-- just the modifier -->
+<form @submit.prevent></form>
+
+<!-- only trigger handler if event.target is the element itself -->
+<!-- i.e. not from a child element -->
+<div @click.self="doThat">...</div>
+```
+Note that order also matters. 
+```
+<!-- use capture mode when adding the event listener -->
+<!-- i.e. an event targeting an inner element is handled here before being handled by that element -->
+<div @click.capture="doThis">...</div>
+
+<!-- the click event will be triggered at most once -->
+<a @click.once="doThis"></a>
+
+<!-- the scroll event's default behavior (scrolling) will happen -->
+<!-- immediately, instead of waiting for `onScroll` to complete  -->
+<!-- in case it contains `event.preventDefault()`                -->
+<div @scroll.passive="onScroll">...</div>
+```
+### Key Modifiers:
+```
+<!-- only call `vm.submit()` when the `key` is `Enter` -->
+<input @keyup.enter="submit" />
+```
+One can directly use key names exposed via `keyBoardEvent.key` as modifiers by converting them to kebab-case.
+```
+<input @keyup.page-down="onPageDown" />
+```
+In th above example, the handler will only be called if `$event.key` is equal to `PageDown`
+There are many key and moust button modifiers as well.
+
+## Form Input Bindings:
+
+When dealing with forms, we often need to sync the state of form input elements with the corresponding state in js. It us cumbersome to write up value bindings and eventlisteners:
+```
+<input
+  :value="text"
+  @input="event => text = event.target.value">
+```
+the `v-model` directive simplifies the above to:
+```
+<input v-model="text">
+```
+In addition,`v-model` can be used on inputs of different types, `<textarea>` and `<select>` elements.
+It automatically expands to different DOM property and event pairs based on the elements it is used on:
+
+1. `input` with `text` type and `textarea` use `value` property and `input` event.
+2. `input` of type `checkbox` and `radio` use `checked` property and `change` event.
+3. `<select>` use `value` as a prop and `change` as and event.
+
+Note that `v-model` will ignore the initial values of the attributes as the bound js state is treated as the source of truth. The initial value should be declared using the `data` option.
+
+### Multiple checkboxes:
+One can also bind multiple checkboxes to the same array or set value:
+```
+export default {
+  data() {
+    return {
+      checkedNames: []
+    }
+  }
+}
+```
+and:
+```
+<div>Checked names: {{ checkedNames }}</div>
+
+<input type="checkbox" id="jack" value="Jack" v-model="checkedNames">
+<label for="jack">Jack</label>
+
+<input type="checkbox" id="john" value="John" v-model="checkedNames">
+<label for="john">John</label>
+
+<input type="checkbox" id="mike" value="Mike" v-model="checkedNames">
+<label for="mike">Mike</label>
+```
+
+### Select:
+Single select:
+```
+<div>Selected: {{ selected }}</div>
+
+<select v-model="selected">
+  <option disabled value="">Please select one</option>
+  <option>A</option>
+  <option>B</option>
+  <option>C</option>
+</select>
+```
+Multiple select, bound to array:
+```
+<div>Selected: {{ selected }}</div>
+
+<select v-model="selected" multiple>
+  <option>A</option>
+  <option>B</option>
+  <option>C</option>
+</select>
+```
+Note that select options can be dynamically rendered with `v-for`:
+```
+export default {
+  data() {
+    return {
+      selected: 'A',
+      options: [
+        { text: 'One', value: 'A' },
+        { text: 'Two', value: 'B' },
+        { text: 'Three', value: 'C' }
+      ]
+    }
+  }
+}
+```
+and:
+```
+<select v-model="selected">
+  <option v-for="option in options" :value="option.value">
+    {{ option.text }}
+  </option>
+</select>
+
+<div>Selected: {{ selected }}</div>
+```
+### Value bindings:
+```
+<!-- `picked` is a string "a" when checked -->
+<input type="radio" v-model="picked" value="a" />
+
+<!-- `toggle` is either true or false -->
+<input type="checkbox" v-model="toggle" />
+
+<!-- `selected` is a string "abc" when the first option is selected -->
+<select v-model="selected">
+  <option value="abc">ABC</option>
+</select>
+```
+We may want to bind to a dynamic property on the current active instance:
+```
+<input
+  type="checkbox"
+  v-model="toggle"
+  true-value="yes"
+  false-value="no" />
+  ```
+
+  Here, `true-value` and `false-value` are vue-specific attributes that only work with `v-model`. One can also bind to dynamic values using `v-bind`:
+  ```
+  <input
+  type="checkbox"
+  v-model="toggle"
+  :true-value="dynamicTrueValue"
+  :false-value="dynamicFalseValue" />
+  ```
+  For radio buttons:
+  ```
+  <input type="radio" v-model="pick" :value="first" />
+  <input type="radio" v-model="pick" :value="second" />
+```
+`v-model` supports value bindings of non-string values, such as objects:
+```
+<select v-model="selected">
+  <!-- inline object literal -->
+  <option :value="{ number: 123 }">123</option>
+</select>
+```
+### Modifiers:
+.lazy:<br>
+By default, `v-model` syncs input with the data after each `input` event. the lazy modifier changes this to sync on `change` events.
+```
+<!-- synced after "change" instead of "input" -->
+<input v-model.lazy="msg" />
+```
+.number: <br>
+Typecasts the input as a number.
+If it cannot be parsed using `parseFloat()`, the original value is used instead.
+.trim: <br>
+Removes all whitespace from the input.
+
+## Lifecycle Hooks:
+
+Every vue component undergoes through a series of initialization steps when created like setting up data observation, compilation of the template, mounting of the instance to the DOM, and updating the DOM when data changes. Along the way, it runs functions called lifecyle hooks, giving users the opportunity to add their own code at specific stages:
+
+### Registering Lifecycle Hooks:
+The `mounted` hook can be used to run code after the component has finished intial rendering and created DOM nodes. Other common hooks include `unmounted` and `updated`.All lifecycle hooks are called with the `this` context pointing to the current active instance. Therefore, avoid using arrow functions since you will be unable to access the component instance.
+
+## Watchers:
+Sometimes, we need to perform 'side effects' in response to state changes. with the options API, we can use the `watch`option to trigger a function whenever a reactive property changes:
+```
+export default {
+  data() {
+    return {
+      question: '',
+      answer: 'Questions usually contain a question mark. ;-)'
+    }
+  },
+  watch: {
+    // whenever question changes, this function will run
+    question(newQuestion, oldQuestion) {
+      if (newQuestion.includes('?')) {
+        this.getAnswer()
+      }
+    }
+  },
+  methods: {
+    async getAnswer() {
+      this.answer = 'Thinking...'
+      try {
+        const res = await fetch('https://yesno.wtf/api')
+        this.answer = (await res.json()).answer
+      } catch (error) {
+        this.answer = 'Error! Could not reach the API. ' + error
+      }
+    }
+  }
+}
+```
+and:
+```
+
+<p>
+  Ask a yes/no question:
+  <input v-model="question" />
+</p>
+<p>{{ answer }}</p>
+```
+
+Note that the `watch` element supports a dot delimited path as the key.
+
+### Deep Watchers:
+
+Watch is shallow by default as it will only trigger if the watched property has been assigned to a new value. It will not trigger on nested property changes. This is where deep watches come in:
+```
+export default {
+  watch: {
+    someObject: {
+      handler(newValue, oldValue) {
+        // Note: `newValue` will be equal to `oldValue` here
+        // on nested mutations as long as the object itself
+        // hasn't been replaced.
+      },
+      deep: true
+    }
+  }
+}
+```
+They are however very expensive when used on large data structures hence are to be used with caution.
+
+### Eager Watchers:
+`watch` is lazy by default. It will not be called until the watched source has changed.
+We can force a watcher's callback to be executed immediately by declaring using an object with an handler function and the `immediate: true` option.
+```
+export default {
+  // ...
+  watch: {
+    question: {
+      handler(newQuestion) {
+        // this will be run immediately on component creation.
+      },
+      // force eager callback execution
+      immediate: true
+    }
+  }
+  // ...
+}
+```
+### Callback Flush Timing:
+
+When a reactive state mutates, one triggers both vue component updates and watcher callbacks. This means that if one attempts to access the DOM inside a watcher callback, it would still be in its pre-updated state. If one wants to access the DOM after vue has updated it, one needs to specify the `flush: post` option
+
+One can also create watchers imperatively using the `$watch()` instance method. 
+```
+export default {
+  created() {
+    this.$watch('question', (newQuestion) => {
+      // ...
+    })
+  }
+}
+```
+This is useful when one wants to conditionally set up a watcher, or stop a watcher early.
+
+### Stopping a watcher:
+All watchers are automatically stopped when their owner components are unmounted. In the event one needs to stop a watcher:
+```
+const unwatch = this.$watch('foo', callback)
+
+// ...when the watcher is no longer needed:
+unwatch()
+```
+
+## Template Refs:
+
+Vue's declarative rendering model abstracts away most of the away most of the direct DOM operations, one may still need to access the underlying DOM elements. To do this, one can use the special `ref` attribute.
+```
+<input ref="input">
+```
+### Accessing the Refs:
+
+```
+<script>
+export default {
+  mounted() {
+    this.$refs.input.focus()
+  }
+}
+</script>
+
+<template>
+  <input ref="input" />
+</template>
+```
+Note that one can only access the `refs` only after the component is mounted. It is therefore null in a template expression on the first render. 
+
+### Refs inside v-for:
+when used inside `v-for`, the result is an array containing the corresponding elements
+```
+<script>
+export default {
+  data() {
+    return {
+      list: [
+        /* ... */
+      ]
+    }
+  },
+  mounted() {
+    console.log(this.$refs.items)
+  }
+}
+</script>
+
+<template>
+  <ul>
+    <li v-for="item in list" ref="items">
+      {{ item }}
+    </li>
+  </ul>
+</template>
+```
+
+### Function Refs:
+Instead of a string key, `ref` can also be bound to a function which will be called on each component update. The element reference is received as the first argument:
+
+```
+<input :ref="(el) => { /* assign el to a property or ref */ }">
+```
+Note that we are using a dynamic `:ref` binding. The argument is `null` when the element is unmounted.
+
+### Ref on Component:
+`ref` can also be used on a child component.In this case, the ref will be that of the component instance. 
+```
+<script>
+import Child from './Child.vue'
+
+export default {
+  components: {
+    Child
+  },
+  mounted() {
+    // this.$refs.child will hold an instance of <Child />
+  }
+}
+</script>
+
+<template>
+  <Child ref="child" />
+</template>
+```
+The referenced instance will be equal to the child component's `this` which means the parent will have full access to the child's methods and properties. 
+
+The `expose` option can be used to limit access to a child's instance. 
+```
+export default {
+  expose: ['publicData', 'publicMethod'],
+  data() {
+    return {
+      publicData: 'foo',
+      privateData: 'bar'
+    }
+  },
+  methods: {
+    publicMethod() {
+      /* ... */
+    },
+    privateMethod() {
+      /* ... */
+    }
+  }
+}
+```
+In the above, a parent referencing this component will only have access to `publicData` and `publicMethod`
+
+## Components:
+
+

@@ -5,7 +5,9 @@ import { computed } from '@vue/reactivity'
     data(){
       return{
         count : 0,
+        list : ["lenny", "James", "Cephas"],
         msg: "Hello World",
+        input:"nothing",
         rawHTML: '<span style="color: red">This should be red.</span>'
       }
     },
@@ -17,9 +19,18 @@ import { computed } from '@vue/reactivity'
       returnMsg(){
         this.count++
         this.msg = "Hello World"
+      },
+      greet(event){
+        //this inside methods indicate the current active instance:
+        alert(`Hello ${this.name}`)
+        if (event){
+          alert(event.target.tagName)
+        }
+
       }
     },
     mounted(){
+      console.log(this.$refs.items)
       this.returnMsg()
     },
     computed: {
@@ -48,6 +59,16 @@ import { computed } from '@vue/reactivity'
     <p>
       <span>{{ countExceeded }}</span>
     </p>
+    <li v-for="(list_items,index) in list" ref="items">
+    {{ index}} - {{ list_items }} 
+    </li>
+     <br>
+    <br>
+    <button @click="greet"> Greet me! </button>
+    <p>
+      The message is {{ input }}
+    </p>
+    <textarea v-model="input" placeholder="Type your message here"/>
   </main>
 </template>
 
